@@ -1,0 +1,27 @@
+For this assignment, I built a simple user-level threading system in xv6 along with a basic mutex. The idea was to simulate threads without modifying the kernel, so everything runs in user space. Each thread has its own stack, and switching between threads is done manually using a context switch.
+How Threads Work:
+Each thread is stored in a table and has a thread ID, a state, a stack, and a saved stack pointer. When I create a thread using thread_create() , I allocate a new stack and set it up so the thread starts running in a helper function (thread_stub). That function calls the actual thread function and then marks the thread as finished when it’s done.
+Context Switching:
+The actual switching between threads happens in uswtch.S. This part saves the current thread’s registers, switches the stack pointer, and restores the registers of the next thread. In simple terms, it pauses one thread and resumes another by switching their stacks.
+Scheduling:
+I used a round-robin scheduler. The function thread_yield() looks for the next runnable thread and switches to it. Since this is cooperative scheduling, threads only switch when they call thread_yield() . If a thread never yields, it will keep running.
+Mutex:
+The mutex is kinda simple. It just uses a flag:
+mutex_lock() keeps yielding until the lock is free, then takes it
+mutex_unlock() releases it
+Because threads only switch when they yield, I didn’t need atomic instructions.
+Test_pc:
+I tested everything using the producer-consumer program. Two producer threads add items to a shared buffer, and one consumer thread removes them. A mutex protects the shared variables so everything stays consistent.
+The output showed progress every 100 items and ended with.
+test_pc: done
+That means:
+threads were switching correctly
+no data got corrupted
+no deadlocks happened
+ limitations:
+There are a few limitations:
+limited the system to 16 threads
+stack size is fixed (4096 bytes per thread)
+scheduling is cooperative, not preemptive
+there’s no priority system
+
